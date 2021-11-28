@@ -1,5 +1,5 @@
 {
-    "name": "Mnist_LeNet",
+    "name": "PANNet_Pytorch",
     "n_gpu": 1,
 
     "arch": {
@@ -8,7 +8,7 @@
     },
 
     "data_loader": {
-        "type": "MnistDataLoader",
+        "type": "PANDataLoader",
         "args": {
             "data_dir": "data/",
             "batch_size": 128,
