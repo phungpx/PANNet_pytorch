@@ -18,18 +18,18 @@ class BaseTrainer:
 
         cfg_trainer = config['trainer']
         self.epochs = cfg_trainer['epochs']
-        self.save_period = cfg_trainer['save_period']
         self.monitor = cfg_trainer.get('monitor', 'off')
+        self.save_period = cfg_trainer['save_period']
 
-        # configuration to monitor model performance and save best
+        # Configuration to monitor model performance and save best
         if self.monitor == 'off':
-            self.mnt_mode = 'off'
-            self.mnt_best = 0
+            self.monitor_mode = 'off'
+            self.monitor_best = 0
         else:
-            self.mnt_mode, self.mnt_metric = self.monitor.split()
-            assert self.mnt_mode in ['min', 'max']
+            self.monitor_mode, self.monitor_metric = self.monitor.split()
+            assert self.monitor_mode in ['min', 'max']
 
-            self.mnt_best = np.inf if self.mnt_mode == 'min' else -np.inf
+            self.monitor_best = np.inf if self.monitor_mode == 'min' else -np.inf
             self.early_stop = cfg_trainer.get('early_stop', np.inf)
             if self.early_stop <= 0:
                 self.early_stop = np.inf
@@ -38,7 +38,7 @@ class BaseTrainer:
 
         self.checkpoint_dir = config.save_dir
 
-        # setup visualization writer instance
+        # Setup visualization writer instance
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
         if config.resume is not None:
@@ -52,36 +52,39 @@ class BaseTrainer:
         raise NotImplementedError
 
     def train(self):
-        """
-        Full training logic
+        """Full training logic
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self.train_epoch(epoch)
 
-            # save logged informations into log dict
+            # Save logged informations into log dictionary
             log = {'epoch': epoch}
             log.update(result)
 
-            # print logged informations to the screen
+            # Print logged informations to the screen
             for key, value in log.items():
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
 
-            # evaluate model performance according to configured metric, save best checkpoint as model_best
+            # Evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
-            if self.mnt_mode != 'off':
+            if self.monitor_mode != 'off':
                 try:
-                    # check whether model performance improved or not, according to specified metric(mnt_metric)
-                    improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-                               (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
+                    # Check whether model performance improved or not, according to specified metric(monitor_metric)
+                    improved = (
+                        (self.monitor_mode == 'min' and log[self.monitor_metric] <= self.monitor_best) or
+                        (self.monitor_mode == 'max' and log[self.monitor_metric] >= self.monitor_best)
+                    )
                 except KeyError:
-                    self.logger.warning("Warning: Metric '{}' is not found. "
-                                        "Model performance monitoring is disabled.".format(self.mnt_metric))
-                    self.mnt_mode = 'off'
+                    self.logger.warning(
+                        "Warning: Metric '{}' is not found. "
+                        "Model performance monitoring is disabled.".format(self.monitor_metric)
+                    )
+                    self.monitor_mode = 'off'
                     improved = False
 
                 if improved:
-                    self.mnt_best = log[self.mnt_metric]
+                    self.monitor_best = log[self.monitor_metric]
                     not_improved_count = 0
                     best = True
                 else:
@@ -109,7 +112,7 @@ class BaseTrainer:
             'epoch': epoch,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
-            'monitor_best': self.mnt_best,
+            'monitor_best': self.monitor_best,
             'config': self.config
         }
 
@@ -124,17 +127,16 @@ class BaseTrainer:
             self.logger.info("Saving current best: model_best.pth ...")
 
     def resume_checkpoint(self, resume_path):
-        """
-        Resume from saved checkpoints
-        :param resume_path: Checkpoint path to be resumed
+        """Resume from saved checkpoints
+            :param resume_path: Checkpoint path to be resumed
         """
         resume_path = str(resume_path)
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint['epoch'] + 1
-        self.mnt_best = checkpoint['monitor_best']
+        self.monitor_best = checkpoint['monitor_best']
 
-        # load architecture params from checkpoint.
+        # Load architecture params from checkpoint.
         if checkpoint['config']['arch'] != self.config['arch']:
             self.logger.warning(
                 "Warning: Architecture configuration given in config file is different from that of "
@@ -143,7 +145,7 @@ class BaseTrainer:
 
         self.model.load_state_dict(checkpoint['state_dict'])
 
-        # load optimizer state from checkpoint only when optimizer type is not changed.
+        # Load optimizer state from checkpoint only when optimizer type is not changed.
         if checkpoint['config']['optimizer']['type'] != self.config['optimizer']['type']:
             self.logger.warning(
                 "Warning: Optimizer type given in config file is different from that of checkpoint. "

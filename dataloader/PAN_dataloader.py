@@ -1,3 +1,5 @@
+from typing import List, Tuple, Optional
+
 from abstract import BaseDataLoader
 from .PAN_dataset import PANDataset
 
@@ -7,15 +9,21 @@ class PANDataLoader(BaseDataLoader):
     """
     def __init__(
         self,
-        dirnames, imsize, mean, std, shrink_ratio,
-        image_extents, label_extent,
-        transforms, require_transforms,
-        validation_split=0.0,
-        batch_size=1,
-        shuffle=True,
-        num_workers=1,
-        pin_memory=True,
-        drop_last=False,
+        dirnames: List[str],
+        imsize: int = 640,
+        mean: Optional[Tuple[float, float, float]] = None,
+        std: Optional[Tuple[float, float, float]] = None,
+        shrink_ratio: float = 0.5,
+        image_extents: List[str] = ['.jpg'],
+        label_extent: str = '.json',
+        transforms: Optional[list] = None,
+        require_transforms: Optional[list] = None,
+        validation_split: float = 0.0,
+        batch_size: int = 1,
+        shuffle: bool = True,
+        num_workers: int = 1,
+        pin_memory: bool = True,
+        drop_last: bool = False,
     ):
         self.dataset = PANDataset(
             dirnames, imsize, mean, std, shrink_ratio,

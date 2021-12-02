@@ -9,8 +9,8 @@ from model import metric as module_metric
 from dataloader import mnist_dataset as module_data
 
 from trainer import Trainer
-from config_parser import ConfigParser
 from utils import prepare_device
+from config_parser import ConfigParser
 
 
 # Fix random seeds for reproducibility.
