@@ -1,9 +1,11 @@
+import torch
 from torch import nn
+from typing import Tuple
 from torchvision import models
 
 
 class ResNet(nn.Module):
-    def __init__(self, backbone_name, pretrained=False):
+    def __init__(self, backbone_name: str = 'resnet18', pretrained: bool = False):
         super(ResNet, self).__init__()
         backbone = getattr(models, backbone_name)(pretrained)
         self.conv1 = backbone.conv1
@@ -16,7 +18,7 @@ class ResNet(nn.Module):
         self.layer3 = backbone.layer3
         self.layer4 = backbone.layer4
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor]:
         features = []
 
         x = self.conv1(x)
@@ -36,4 +38,4 @@ class ResNet(nn.Module):
         x = self.layer4(x)
         features.append(x)  # c5
 
-        return features
+        return tuple(features)
